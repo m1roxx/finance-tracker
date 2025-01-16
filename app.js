@@ -6,9 +6,11 @@ const bodyParser = require('body-parser');
 const userRoutes = require('./src/routes/userRoutes.js');
 const incomeRoutes = require('./src/routes/incomeRoutes');
 const currencyRoutes = require('./src/routes/currencyRoutes');
+const expenseRoutes = require('./src/routes/expenseRoutes');
 
 const app = express();
 const uri = process.env.MONGODB_URI;
+const port = process.env.PORT
 
 // db connection
 mongoose.connect(uri, {
@@ -22,6 +24,7 @@ app.use(bodyParser.json());
 app.use('/api/users', userRoutes);
 app.use('/api/incomes', incomeRoutes);
 app.use('/api/currency', currencyRoutes);
+app.use('/api/expenses', expenseRoutes);
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/login', (req, res) => {
@@ -53,4 +56,4 @@ app.get('/contact', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'contact.html'));
 });
 
-app.listen(8000, () => console.log('Server running on port 8000'));
+app.listen(port, () => console.log(`Server running on port ${port}`));
