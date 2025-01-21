@@ -2,16 +2,17 @@ const Expense = require('../models/Expense');
 
 const createExpense = async (req, res) => {
     try {
-        const { description, amount } = req.body;
+        const { description, amount, category } = req.body;
         const userId = req.user._id;
 
-        if (!description || !amount) {
-            return res.status(400).json({ message: 'Description and amount are required' });
+        if (!description || !amount || !category) {
+            return res.status(400).json({ message: 'Description, amount, and category are required' });
         }
 
         const expense = new Expense({
             description,
             amount,
+            category,
             userId
         });
 
@@ -52,14 +53,14 @@ const getExpenseById = async (req, res) => {
 
 const updateExpense = async (req, res) => {
     try {
-        const { description, amount } = req.body;
+        const { description, amount, category } = req.body;
 
         const expense = await Expense.findOneAndUpdate(
             {
                 _id: req.params.id,
                 userId: req.user._id
             },
-            { description, amount },
+            { description, amount, category },
             { new: true }
         );
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const checkDatabaseConnection = require('../middleware/checkDatabaseConnection');
 const {
     createIncome,
     getIncomes,
@@ -10,6 +11,7 @@ const {
 } = require('../controllers/incomeController');
 
 router.use(authMiddleware);
+router.use(checkDatabaseConnection);
 
 router.post('/', createIncome);
 router.get('/', getIncomes);

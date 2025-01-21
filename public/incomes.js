@@ -6,6 +6,29 @@ if (!token) {
 const incomeModal = new bootstrap.Modal(document.getElementById('incomeModal'));
 let editing = false;
 
+async function handleApiError(error, defaultMessage) {
+    console.error('Error:', error);
+
+    try {
+        const errorData = await error.json();
+        if (errorData.error?.code === 'DATABASE_UNAVAILABLE') {
+            const errorHtml = `
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>Service Temporarily Unavailable</strong>
+                    <p>${errorData.message}</p>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            const container = document.querySelector('.container');
+            container.insertAdjacentHTML('afterbegin', errorHtml);
+        } else {
+            alert(defaultMessage);
+        }
+    } catch (e) {
+        alert(defaultMessage);
+    }
+}
+
 async function loadIncomes() {
     try {
         const response = await fetch('/api/incomes', {
@@ -15,7 +38,7 @@ async function loadIncomes() {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to fetch incomes');
+            throw response;
         }
 
         const incomes = await response.json();
@@ -28,6 +51,7 @@ async function loadIncomes() {
                 <div class="list-group-item income-item d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="mb-1">${income.description}</h5>
+                        <small class="text-muted">Category: ${income.category}</small><br>
                         <small>Date: ${date}</small>
                     </div>
                     <div>
@@ -43,8 +67,7 @@ async function loadIncomes() {
             `;
         });
     } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to load incomes');
+        await handleApiError(error, 'Failed to load incomes');
     }
 }
 
@@ -54,6 +77,7 @@ document.getElementById('incomeForm').addEventListener('submit', async (e) => {
 
     const description = document.getElementById('description').value;
     const amount = document.getElementById('amount').value;
+    const category = document.getElementById('category').value;
     const incomeId = document.getElementById('incomeId').value;
 
     const method = editing ? 'PUT' : 'POST';
@@ -66,7 +90,7 @@ document.getElementById('incomeForm').addEventListener('submit', async (e) => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ description, amount })
+            body: JSON.stringify({ description, amount, category })
         });
 
         if (!response.ok) {
@@ -77,8 +101,7 @@ document.getElementById('incomeForm').addEventListener('submit', async (e) => {
         loadIncomes();
         resetForm();
     } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to save income');
+        await handleApiError(error, 'Failed to save income');
     }
 });
 
@@ -100,13 +123,13 @@ async function editIncome(id) {
         document.getElementById('incomeId').value = income._id;
         document.getElementById('description').value = income.description;
         document.getElementById('amount').value = income.amount;
+        document.getElementById('category').value = income.category;
 
         document.getElementById('modalTitle').textContent = 'Edit Income';
         editing = true;
         incomeModal.show();
     } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to load income details');
+        await handleApiError(error, 'Failed to load income details');
     }
 }
 
@@ -130,8 +153,7 @@ async function deleteIncome(id) {
 
         loadIncomes();
     } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to delete income');
+        await handleApiError(error, 'Failed to delete income');
     }
 }
 

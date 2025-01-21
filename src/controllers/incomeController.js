@@ -2,16 +2,17 @@ const Income = require('../models/Income');
 
 const createIncome = async (req, res) => {
     try {
-        const { description, amount } = req.body;
+        const { description, amount, category } = req.body;
         const userId = req.user._id;
 
-        if (!description || !amount) {
-            return res.status(400).json({ message: 'Description and amount are required' });
+        if (!description || !amount || !category) {
+            return res.status(400).json({ message: 'Description, amount, and category are required' });
         }
 
         const income = new Income({
             description,
             amount,
+            category,
             userId
         });
 
@@ -52,14 +53,14 @@ const getIncomeById = async (req, res) => {
 
 const updateIncome = async (req, res) => {
     try {
-        const { description, amount } = req.body;
+        const { description, amount, category } = req.body;
 
         const income = await Income.findOneAndUpdate(
             {
                 _id: req.params.id,
                 userId: req.user._id
             },
-            { description, amount },
+            { description, amount, category },
             { new: true }
         );
 

@@ -6,6 +6,29 @@ if (!token) {
 const expenseModal = new bootstrap.Modal(document.getElementById('expenseModal'));
 let editing = false;
 
+async function handleApiError(error, defaultMessage) {
+    console.error('Error:', error);
+
+    try {
+        const errorData = await error.json();
+        if (errorData.error?.code === 'DATABASE_UNAVAILABLE') {
+            const errorHtml = `
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>Service Temporarily Unavailable</strong>
+                    <p>${errorData.message}</p>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            const container = document.querySelector('.container');
+            container.insertAdjacentHTML('afterbegin', errorHtml);
+        } else {
+            alert(defaultMessage);
+        }
+    } catch (e) {
+        alert(defaultMessage);
+    }
+}
+
 async function loadExpenses() {
     try {
         const response = await fetch('/api/expenses', {
@@ -15,7 +38,7 @@ async function loadExpenses() {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to fetch expenses');
+            throw response;
         }
 
         const expenses = await response.json();
@@ -28,6 +51,7 @@ async function loadExpenses() {
                 <div class="list-group-item expense-item d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="mb-1">${expense.description}</h5>
+                        <small class="text-muted">Category: ${expense.category}</small><br>
                         <small>Date: ${date}</small>
                     </div>
                     <div>
@@ -43,8 +67,7 @@ async function loadExpenses() {
             `;
         });
     } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to load expenses');
+        await handleApiError(error, 'Failed to load expenses');
     }
 }
 
@@ -53,6 +76,7 @@ document.getElementById('expenseForm').addEventListener('submit', async (e) => {
 
     const description = document.getElementById('description').value;
     const amount = document.getElementById('amount').value;
+    const category = document.getElementById('category').value;
     const expenseId = document.getElementById('expenseId').value;
 
     const method = editing ? 'PUT' : 'POST';
@@ -65,7 +89,7 @@ document.getElementById('expenseForm').addEventListener('submit', async (e) => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ description, amount })
+            body: JSON.stringify({ description, amount, category })
         });
 
         if (!response.ok) {
@@ -76,8 +100,7 @@ document.getElementById('expenseForm').addEventListener('submit', async (e) => {
         loadExpenses();
         resetForm();
     } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to save expense');
+        await handleApiError(error, 'Failed to save expense');
     }
 });
 
@@ -98,13 +121,13 @@ async function editExpense(id) {
         document.getElementById('expenseId').value = expense._id;
         document.getElementById('description').value = expense.description;
         document.getElementById('amount').value = expense.amount;
+        document.getElementById('category').value = expense.category;
 
         document.getElementById('modalTitle').textContent = 'Edit Expense';
         editing = true;
         expenseModal.show();
     } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to load expense details');
+        await handleApiError(error, 'Failed to load expense details');
     }
 }
 
@@ -127,8 +150,7 @@ async function deleteExpense(id) {
 
         loadExpenses();
     } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to delete expense');
+        await handleApiError(error, 'Failed to delete expense');
     }
 }
 
