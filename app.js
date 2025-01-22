@@ -7,6 +7,7 @@ const userRoutes = require('./src/routes/userRoutes.js');
 const incomeRoutes = require('./src/routes/incomeRoutes');
 const currencyRoutes = require('./src/routes/currencyRoutes');
 const expenseRoutes = require('./src/routes/expenseRoutes');
+const reportRoutes = require('./src/routes/reportRoutes');
 
 const app = express();
 const uri = process.env.MONGODB_URI;
@@ -25,6 +26,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/incomes', incomeRoutes);
 app.use('/api/currency', currencyRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/reports', reportRoutes);
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/login', (req, res) => {
@@ -45,9 +47,6 @@ app.get('/expenses', (req, res) => {
 });
 app.get('/reports', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'reports.html'));
-});
-app.get('/budget', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'budget.html'));
 });
 app.get('/settings', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'settings.html'));
