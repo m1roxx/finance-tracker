@@ -44,7 +44,7 @@ async function fetchData() {
 
 async function createMonthlyReport(month, year, incomes, expenses) {
     const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
-    const plannedBudget = totalIncome; // Set initial budget to total income
+    const plannedBudget = totalIncome;
 
     const incomeCategories = Object.entries(groupByCategory(incomes))
         .map(([category, amount]) => ({
@@ -103,8 +103,8 @@ function processData(incomes, expenses, report) {
             totalIncome,
             totalExpense,
             remaining: totalIncome - totalExpense,
-            planned: report ? report.budget.planned : totalIncome,
-            actualRemaining: report ? report.budget.remaining : (totalIncome - totalExpense)
+            planned: totalIncome,
+            actualRemaining: totalIncome - totalExpense
         },
         report
     };
@@ -121,10 +121,6 @@ function groupByCategory(items) {
 function updateBudgetInfo(budgetData) {
     const budgetInfo = document.getElementById('budgetInfo');
     budgetInfo.innerHTML = `
-        <div class="d-flex justify-content-between mb-2">
-            <span>Planned Budget:</span>
-            <span>$${budgetData.planned.toFixed(2)}</span>
-        </div>
         <div class="d-flex justify-content-between mb-2">
             <span>Total Income:</span>
             <span>$${budgetData.totalIncome.toFixed(2)}</span>

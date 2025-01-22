@@ -31,7 +31,12 @@ async function handleApiError(error, defaultMessage) {
 
 async function loadIncomes() {
     try {
-        const response = await fetch('/api/incomes', {
+        const categoryFilter = document.getElementById('categoryFilter').value;
+        const url = categoryFilter
+            ? `/api/incomes?category=${encodeURIComponent(categoryFilter)}`
+            : '/api/incomes';
+
+        const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -70,6 +75,8 @@ async function loadIncomes() {
         await handleApiError(error, 'Failed to load incomes');
     }
 }
+
+document.getElementById('categoryFilter').addEventListener('change', loadIncomes);
 
 // Handle form submission
 document.getElementById('incomeForm').addEventListener('submit', async (e) => {

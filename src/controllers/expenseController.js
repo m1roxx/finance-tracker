@@ -26,7 +26,14 @@ const createExpense = async (req, res) => {
 const getExpenses = async (req, res) => {
     try {
         const userId = req.user._id;
-        const expenses = await Expense.find({ userId })
+        const { category } = req.query;
+
+        const query = { userId };
+        if (category) {
+            query.category = category;
+        }
+
+        const expenses = await Expense.find(query)
             .sort({ date: -1 });
         res.json(expenses);
     } catch (error) {

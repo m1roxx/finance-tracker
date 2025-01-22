@@ -4,16 +4,20 @@ const Expense = require('../models/Expense');
 
 const createReport = async (req, res) => {
     try {
-        const { month, year, budget } = req.body;
+        const { month, year } = req.body;
         const userId = req.user._id;
 
-        if (!month || !year || !budget) {
-            return res.status(400).json({ message: 'Month, year, and budget are required' });
+        if (!month || !year) {
+            return res.status(400).json({ message: 'Month and year are required' });
         }
 
-        // Get all incomes and expenses for the specified month and year
-        const startDate = new Date(year, monthToNumber(month), 1);
-        const endDate = new Date(year, monthToNumber(month) + 1, 0);
+        const monthNumber = monthToNumber(month);
+        if (monthNumber === undefined) {
+            return res.status(400).json({ message: 'Invalid month format' });
+        }
+
+        const startDate = new Date(year, monthNumber, 1);
+        const endDate = new Date(year, monthNumber + 1, 0);
 
         const [incomes, expenses] = await Promise.all([
             Income.find({
@@ -26,35 +30,46 @@ const createReport = async (req, res) => {
             })
         ]);
 
-        // Process incomes by category
-        const incomeCategories = processCategories(incomes, budget.income || []);
+        let report = await Report.findOne({ userId, month, year });
 
-        // Process expenses by category
-        const expenseCategories = processCategories(expenses, budget.expense || []);
+        if (!report) {
+            const incomeCategories = processCategories(incomes, req.body.budget?.income || []);
+            const expenseCategories = processCategories(expenses, req.body.budget?.expense || []);
 
-        // Calculate remaining budget
-        const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
-        const totalExpense = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-        const remaining = budget.planned - totalExpense;
+            report = new Report({
+                userId,
+                month,
+                year,
+                categories: {
+                    income: incomeCategories,
+                    expense: expenseCategories
+                }
+            });
 
-        const report = new Report({
-            userId,
-            month,
-            year,
-            budget: {
-                planned: budget.planned,
-                remaining
-            },
-            categories: {
-                income: incomeCategories,
-                expense: expenseCategories
+            try {
+                await report.save();
+                return res.status(201).json(report);
+            } catch (saveError) {
+                console.error('Error saving new report:', saveError);
+                return res.status(500).json({ message: 'Server error saving report' });
             }
-        });
+        } else {
+            const incomeCategories = processCategories(incomes, req.body.budget?.income || report.categories.income);
+            const expenseCategories = processCategories(expenses, req.body.budget?.expense || report.categories.expense);
 
-        await report.save();
-        res.status(201).json(report);
+            report.categories.income = incomeCategories;
+            report.categories.expense = expenseCategories;
+            try {
+                await report.save();
+                return res.json(report);
+            } catch (saveError) {
+                console.error('Error updating report:', saveError);
+                return res.status(500).json({ message: 'Server error updating report' });
+            }
+        }
+
     } catch (error) {
-        console.error('Create report error:', error);
+        console.error('Error creating report:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -129,7 +144,6 @@ const deleteReport = async (req, res) => {
     }
 };
 
-// Helper functions
 function monthToNumber(month) {
     const months = {
         'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
@@ -142,13 +156,11 @@ function processCategories(items, plannedCategories) {
     const categoriesMap = new Map(plannedCategories.map(cat => [cat.category, cat.planned]));
     const processedCategories = new Map();
 
-    // Sum actual amounts by category
     items.forEach(item => {
         const current = processedCategories.get(item.category) || 0;
         processedCategories.set(item.category, current + item.amount);
     });
 
-    // Convert to required format
     return Array.from(categoriesMap.entries()).map(([category, planned]) => ({
         category,
         planned,

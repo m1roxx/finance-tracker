@@ -31,7 +31,12 @@ async function handleApiError(error, defaultMessage) {
 
 async function loadExpenses() {
     try {
-        const response = await fetch('/api/expenses', {
+        const categoryFilter = document.getElementById('categoryFilter').value;
+        const url = categoryFilter
+            ? `/api/expenses?category=${encodeURIComponent(categoryFilter)}`
+            : '/api/expenses';
+
+        const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -70,6 +75,8 @@ async function loadExpenses() {
         await handleApiError(error, 'Failed to load expenses');
     }
 }
+
+document.getElementById('categoryFilter').addEventListener('change', loadExpenses);
 
 document.getElementById('expenseForm').addEventListener('submit', async (e) => {
     e.preventDefault();

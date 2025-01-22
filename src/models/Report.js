@@ -4,19 +4,13 @@ const reportSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     month: { type: String, required: true },
     year: { type: Number, required: true },
-    budget: {
-        planned: { type: Number, required: true },
-        remaining: { type: Number, required: true }
-    },
     categories: {
         income: [{
             category: { type: String, required: true },
-            planned: { type: Number, required: true },
             actual: { type: Number, default: 0 }
         }],
         expense: [{
             category: { type: String, required: true },
-            planned: { type: Number, required: true },
             actual: { type: Number, default: 0 }
         }]
     }

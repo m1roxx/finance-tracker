@@ -26,7 +26,14 @@ const createIncome = async (req, res) => {
 const getIncomes = async (req, res) => {
     try {
         const userId = req.user._id;
-        const incomes = await Income.find({ userId })
+        const { category } = req.query;
+
+        const query = { userId };
+        if (category) {
+            query.category = category;
+        }
+
+        const incomes = await Income.find(query)
             .sort({ date: -1 });
         res.json(incomes);
     } catch (error) {
