@@ -8,6 +8,7 @@ const incomeRoutes = require('./src/routes/incomeRoutes');
 const currencyRoutes = require('./src/routes/currencyRoutes');
 const expenseRoutes = require('./src/routes/expenseRoutes');
 const reportRoutes = require('./src/routes/reportRoutes');
+const categoryBudgetRoutes = require('./src/routes/categoryBudgetRoutes');
 
 const app = express();
 const uri = process.env.MONGODB_URI;
@@ -27,6 +28,7 @@ app.use('/api/incomes', incomeRoutes);
 app.use('/api/currency', currencyRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/budgets', categoryBudgetRoutes);
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/login', (req, res) => {

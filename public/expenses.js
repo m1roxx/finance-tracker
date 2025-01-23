@@ -170,4 +170,32 @@ function resetForm() {
     editing = false;
 }
 
+document.getElementById('budgetForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    const category = document.getElementById('budgetCategory').value;
+    const plannedAmount = document.getElementById('plannedAmount').value;
+
+    try {
+        const response = await fetch('/api/budgets', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ categoryId: category, plannedAmount: parseFloat(plannedAmount) })
+        });
+
+        if (response.ok) {
+            alert('Budget added successfully');
+        } else {
+            const errorData = await response.json();
+            alert(`Error: ${errorData.message}`);
+        }
+    } catch (error) {
+        console.error('Error adding budget:', error);
+        alert('An error occurred while adding the budget');
+    }
+});
+
 loadExpenses();
