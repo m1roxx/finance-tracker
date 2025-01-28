@@ -57,6 +57,9 @@
       <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#budgetModal">
         Add Budget
       </button>
+      <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#viewBudgetsModal">
+        View Budgets
+      </button>
     </div>
   </div>
 
@@ -153,6 +156,22 @@
           </div>
           <button type="submit" class="btn btn-primary">Save Budget</button>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="viewBudgetsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Category Budgets</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="budgetsList" class="list-group">
+
+        </div>
       </div>
     </div>
   </div>

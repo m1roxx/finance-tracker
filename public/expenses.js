@@ -170,6 +170,69 @@ function resetForm() {
     editing = false;
 }
 
+const viewBudgetsModal = new bootstrap.Modal(document.getElementById('viewBudgetsModal'));
+
+async function loadBudgets() {
+    try {
+        const response = await fetch('/api/budgets', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw response;
+        }
+
+        const budgets = await response.json();
+        const budgetsList = document.getElementById('budgetsList');
+        budgetsList.innerHTML = '';
+
+        budgets.forEach(budget => {
+            budgetsList.innerHTML += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${budget.category}</h6>
+                        <small class="text-muted">Planned Amount: $${budget.plannedAmount.toFixed(2)}</small>
+                    </div>
+                    <button class="btn btn-sm btn-danger" 
+                            onclick="deleteBudget('${budget.category.replace(/'/g, "\\'")}')">
+                        Delete
+                    </button>
+                </div>
+            `;
+        });
+    } catch (error) {
+        await handleApiError(error, 'Failed to load budgets');
+    }
+}
+
+async function deleteBudget(category) {
+    if (!confirm('Are you sure you want to delete this budget?')) {
+        return;
+    }
+
+    try {
+        const encodedCategory = encodeURIComponent(category);
+        const response = await fetch(`/api/budgets/${encodedCategory}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw response;
+        }
+
+        await loadBudgets();
+    } catch (error) {
+        await handleApiError(error, 'Failed to delete budget');
+    }
+}
+
+document.getElementById('viewBudgetsModal').addEventListener('show.bs.modal', loadBudgets);
+
 document.getElementById('budgetForm').addEventListener('submit', async function (event) {
     event.preventDefault();
 
@@ -188,6 +251,10 @@ document.getElementById('budgetForm').addEventListener('submit', async function 
 
         if (response.ok) {
             alert('Budget added successfully');
+            document.getElementById('budgetForm').reset();
+            const budgetModal = bootstrap.Modal.getInstance(document.getElementById('budgetModal'));
+            budgetModal.hide();
+            loadBudgets();
         } else {
             const errorData = await response.json();
             alert(`Error: ${errorData.message}`);
