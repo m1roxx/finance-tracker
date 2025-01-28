@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const { sendVerificationEmail } = require('../services/emailService');
 
 // Registration
 const registerUser = async (req, res) => {
@@ -53,6 +55,23 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
+        if (user.twoFactorEnabled) {
+            const code = await generate2FACode(user);
+            await sendVerificationEmail(user.email, code);
+
+            const tempToken = jwt.sign(
+                { id: user._id, email: user.email, requiresTwoFactor: true },
+                process.env.JWT_SECRET,
+                { expiresIn: '10m' }
+            );
+
+            return res.json({
+                requiresTwoFactor: true,
+                tempToken,
+                message: 'Please check your email for verification code'
+            });
+        }
+
         const token = jwt.sign(
             { id: user._id, email: user.email },
             process.env.JWT_SECRET,
@@ -74,4 +93,55 @@ const getUser = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, loginUser, getUser };
+const enable2FA = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        user.twoFactorEnabled = true;
+        await user.save();
+        res.json({ message: '2FA enabled successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const generate2FACode = async (user) => {
+    const code = crypto.randomInt(100000, 999999).toString();
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    user.twoFactorCode = code;
+    user.twoFactorCodeExpires = expires;
+    await user.save();
+
+    return code;
+};
+
+const verify2FACode = async (req, res) => {
+    const { code } = req.body;
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (!user.twoFactorCode || user.twoFactorCode !== code) {
+            return res.status(401).json({ message: 'Invalid code' });
+        }
+
+        if (new Date() > user.twoFactorCodeExpires) {
+            return res.status(401).json({ message: 'Code expired' });
+        }
+
+        user.twoFactorCode = null;
+        user.twoFactorCodeExpires = null;
+        await user.save();
+
+        const token = jwt.sign(
+            { id: user._id, email: user.email, twoFactorVerified: true },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        res.json({ token });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { registerUser, loginUser, getUser, enable2FA, verify2FACode };

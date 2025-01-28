@@ -16,15 +16,45 @@ const fetchUserData = async () => {
         if (response.ok) {
             const user = await response.json();
             document.getElementById('welcomeMessage').textContent = `Welcome, ${user.email}!`;
+            initializeTwoFactorToggle(user);
         } else {
             localStorage.removeItem('token');
-            window.location.href = '/login';
+            window.location.href = '/';
         }
     } catch (error) {
         console.error('Error fetching user data:', error);
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        window.location.href = '/';
     }
+};
+
+const initializeTwoFactorToggle = async (user) => {
+    const toggle = document.getElementById('twoFactorToggle');
+    toggle.checked = user.twoFactorEnabled;
+
+    toggle.addEventListener('change', async () => {
+        try {
+            const response = await fetch('/api/users/enable-2fa', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ enabled: toggle.checked })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update 2FA settings');
+            }
+
+            const result = await response.json();
+            alert(result.message);
+        } catch (error) {
+            console.error('Error updating 2FA settings:', error);
+            toggle.checked = !toggle.checked; // Revert the toggle
+            alert('Failed to update 2FA settings. Please try again.');
+        }
+    });
 };
 
 document.getElementById('logoutBtn').addEventListener('click', () => {

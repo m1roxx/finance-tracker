@@ -36,7 +36,7 @@ const getBudgetByCategory = async (req, res) => {
     try {
         const budget = await CategoryBudget.findOne({
             userId: req.user._id,
-            category: req.params.categoryId
+            category: decodeURIComponent(req.params.categoryId)
         });
 
         if (!budget) {
@@ -54,7 +54,7 @@ const getAllBudgets = async (req, res) => {
     try {
         const budgets = await CategoryBudget.find({
             userId: req.user._id
-        }).populate('category', 'name');
+        });
 
         res.status(200).json(budgets);
     } catch (error) {
@@ -67,7 +67,7 @@ const deleteBudget = async (req, res) => {
     try {
         const budget = await CategoryBudget.findOneAndDelete({
             userId: req.user._id,
-            category: req.params.categoryId
+            category: decodeURIComponent(req.params.categoryId)
         });
 
         if (!budget) {
@@ -81,9 +81,32 @@ const deleteBudget = async (req, res) => {
     }
 };
 
+const updateBudget = async (req, res) => {
+    try {
+        const { plannedAmount } = req.body;
+        const category = decodeURIComponent(req.params.categoryId);
+
+        const budget = await CategoryBudget.findOneAndUpdate(
+            { userId: req.user._id, category },
+            { plannedAmount },
+            { new: true, runValidators: true }
+        );
+
+        if (!budget) {
+            return res.status(404).json({ message: 'Budget not found' });
+        }
+
+        res.status(200).json(budget);
+    } catch (error) {
+        console.error('Error updating budget:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     createOrUpdateBudget,
     getBudgetByCategory,
     getAllBudgets,
-    deleteBudget
+    deleteBudget,
+    updateBudget
 };

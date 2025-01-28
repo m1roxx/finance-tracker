@@ -195,10 +195,16 @@ async function loadBudgets() {
                         <h6 class="mb-1">${budget.category}</h6>
                         <small class="text-muted">Planned Amount: $${budget.plannedAmount.toFixed(2)}</small>
                     </div>
-                    <button class="btn btn-sm btn-danger" 
-                            onclick="deleteBudget('${budget.category.replace(/'/g, "\\'")}')">
-                        Delete
-                    </button>
+                    <div>
+                        <button class="btn btn-sm btn-primary me-2" 
+                                onclick="editBudget('${budget.category.replace(/'/g, "\\'")}')">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger" 
+                                onclick="deleteBudget('${budget.category.replace(/'/g, "\\'")}')">
+                            Delete
+                        </button>
+                    </div>
                 </div>
             `;
         });
@@ -262,6 +268,57 @@ document.getElementById('budgetForm').addEventListener('submit', async function 
     } catch (error) {
         console.error('Error adding budget:', error);
         alert('An error occurred while adding the budget');
+    }
+});
+
+async function editBudget(category) {
+    try {
+        const encodedCategory = encodeURIComponent(category);
+        const response = await fetch(`/api/budgets/category/${encodedCategory}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) throw response;
+
+        const budget = await response.json();
+
+        document.getElementById('editBudgetCategory').value = budget.category;
+        document.getElementById('editPlannedAmount').value = budget.plannedAmount;
+        document.getElementById('editBudgetForm').dataset.category = budget.category;
+
+        new bootstrap.Modal(document.getElementById('editBudgetModal')).show();
+    } catch (error) {
+        await handleApiError(error, 'Failed to load budget details');
+    }
+}
+
+document.getElementById('editBudgetForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const category = this.dataset.category;
+    const newAmount = document.getElementById('editPlannedAmount').value;
+
+    try {
+        const response = await fetch(`/api/budgets/${encodeURIComponent(category)}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                plannedAmount: parseFloat(newAmount)
+            })
+        });
+
+        if (!response.ok) throw response;
+
+        alert('Budget updated successfully');
+        bootstrap.Modal.getInstance(document.getElementById('editBudgetModal')).hide();
+        loadBudgets();
+    } catch (error) {
+        await handleApiError(error, 'Failed to update budget');
     }
 });
 
