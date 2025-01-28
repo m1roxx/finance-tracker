@@ -23,6 +23,12 @@ async function fetchData() {
             })
         ]);
 
+        const budgetResponse = await fetch('/api/budgets', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const budgets = await budgetResponse.json();
+
         const [incomes, expenses] = await Promise.all([
             incomesResponse.json(),
             expensesResponse.json()
@@ -35,7 +41,7 @@ async function fetchData() {
             report = await createMonthlyReport(currentMonth, currentYear, incomes, expenses);
         }
 
-        return processData(incomes, expenses, report);
+        return processData(incomes, expenses, report, budgets);
     } catch (error) {
         console.error('Error fetching data:', error);
         return null;
@@ -89,12 +95,21 @@ async function createMonthlyReport(month, year, incomes, expenses) {
     }
 }
 
-function processData(incomes, expenses, report) {
+function processData(incomes, expenses, report, budgets) {
     const incomesByCategory = groupByCategory(incomes);
     const expensesByCategory = groupByCategory(expenses);
 
     const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
     const totalExpense = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+    const budgetComparisonData = budgets.map(budget => {
+        const actualExpense = expensesByCategory[budget.category] || 0;
+        return {
+            category: budget.category,
+            planned: budget.plannedAmount,
+            actual: actualExpense
+        };
+    });
 
     return {
         incomeData: incomesByCategory,
@@ -106,7 +121,8 @@ function processData(incomes, expenses, report) {
             planned: totalIncome,
             actualRemaining: totalIncome - totalExpense
         },
-        report
+        report,
+        budgetComparisonData
     };
 }
 
@@ -225,6 +241,41 @@ function createCharts(data) {
                 title: {
                     display: true,
                     text: 'Income vs Expenses Comparison'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Budget Comparison Bar Chart
+    const budgetComparisonCtx = document.getElementById('budgetComparisonChart').getContext('2d');
+    new Chart(budgetComparisonCtx, {
+        type: 'bar',
+        data: {
+            labels: data.budgetComparisonData.map(item => item.category),
+            datasets: [
+                {
+                    label: 'Planned',
+                    data: data.budgetComparisonData.map(item => item.planned),
+                    backgroundColor: '#36A2EB'
+                },
+                {
+                    label: 'Actual',
+                    data: data.budgetComparisonData.map(item => item.actual),
+                    backgroundColor: '#FF6384'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Planned vs Actual Expenses by Category'
                 }
             },
             scales: {

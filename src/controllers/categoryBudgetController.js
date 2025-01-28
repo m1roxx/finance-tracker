@@ -54,7 +54,7 @@ const getAllBudgets = async (req, res) => {
     try {
         const budgets = await CategoryBudget.find({
             userId: req.user._id
-        }).populate('categoryId', 'name');
+        }).populate('category', 'name');
 
         res.status(200).json(budgets);
     } catch (error) {
