@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 require('dotenv').config();
 const path = require('path');
 const bodyParser = require('body-parser');
@@ -15,14 +16,17 @@ const uri = process.env.MONGODB_URI;
 const port = process.env.PORT
 
 // db connection
-mongoose.connect(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('Failed to connect to MongoDB:', err));
+if (process.env.NODE_ENV !== 'test') {
+    mongoose.connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+        .then(() => console.log('Connected to MongoDB'))
+        .catch(err => console.error('Failed to connect to MongoDB:', err));
+}
 
 app.use(bodyParser.json());
+app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/incomes', incomeRoutes);
 app.use('/api/currency', currencyRoutes);
@@ -57,4 +61,9 @@ app.get('/contact', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'contact.html'));
 });
 
-app.listen(port, () => console.log(`Server running on port ${port}`));
+if (process.env.NODE_ENV !== 'test') {
+    const port = process.env.PORT || 8000;
+    app.listen(port, () => console.log(`Server running on port ${port}`));
+}
+
+module.exports = app;

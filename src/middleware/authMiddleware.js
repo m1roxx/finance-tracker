@@ -16,7 +16,6 @@ const authMiddleware = async (req, res, next) => {
             return res.status(401).json({ message: 'User not found' });
         }
 
-        // Check if 2FA is required but not verified
         if (user.twoFactorEnabled && !decoded.twoFactorVerified && !decoded.requiresTwoFactor) {
             return res.status(401).json({ message: '2FA verification required' });
         }
