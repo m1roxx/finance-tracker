@@ -56,8 +56,10 @@ const loginUser = async (req, res) => {
         }
 
         if (user.twoFactorEnabled) {
-            const code = await generate2FACode(user);
-            await sendVerificationEmail(user.email, code);
+            if (!user.twoFactorCode || new Date() > user.twoFactorCodeExpires) {
+                const code = await generate2FACode(user);
+                await sendVerificationEmail(user.email, code);
+            }
 
             const tempToken = jwt.sign(
                 { id: user._id, email: user.email, requiresTwoFactor: true },
@@ -77,6 +79,9 @@ const loginUser = async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
+
+        user.activeToken = token;
+        await user.save();
 
         res.json({ token, redirectUrl: '/settings' });
     } catch (error) {
@@ -104,9 +109,20 @@ const enable2FA = async (req, res) => {
     }
 };
 
+const disable2FA = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        user.twoFactorEnabled = false;
+        await user.save();
+        res.json({ message: '2FA disabled successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 const generate2FACode = async (user) => {
     const code = crypto.randomInt(100000, 999999).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
 
     user.twoFactorCode = code;
     user.twoFactorCodeExpires = expires;
@@ -144,4 +160,4 @@ const verify2FACode = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, loginUser, getUser, enable2FA, verify2FACode };
+module.exports = { registerUser, loginUser, getUser, enable2FA, verify2FACode, disable2FA };

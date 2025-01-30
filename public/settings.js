@@ -34,13 +34,13 @@ const initializeTwoFactorToggle = async (user) => {
 
     toggle.addEventListener('change', async () => {
         try {
-            const response = await fetch('/api/users/enable-2fa', {
+            const endpoint = toggle.checked ? '/api/users/enable-2fa' : '/api/users/disable-2fa';
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ enabled: toggle.checked })
+                }
             });
 
             if (!response.ok) {
@@ -51,7 +51,7 @@ const initializeTwoFactorToggle = async (user) => {
             alert(result.message);
         } catch (error) {
             console.error('Error updating 2FA settings:', error);
-            toggle.checked = !toggle.checked; // Revert the toggle
+            toggle.checked = !toggle.checked;
             alert('Failed to update 2FA settings. Please try again.');
         }
     });

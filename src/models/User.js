@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema({
     twoFactorSecret: { type: String },
     twoFactorEnabled: { type: Boolean, default: false },
     twoFactorCode: { type: String },
-    twoFactorCodeExpires: { type: Date }
+    twoFactorCodeExpires: { type: Date },
+    activeToken: String
 }, {
     timestamps: true
 });
